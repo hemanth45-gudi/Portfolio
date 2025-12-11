@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gudi Hemanth - Interactive Developer Portfolio</title>
+    <!-- Load Three.js for 3D rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Load GSAP for advanced scrolling and animation control (Better UX) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+    <!-- Load FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- General Styling and Variables --- */
+        :root {
+            --color-bg: #050508; /* Darker black for deep space */
+            --color-primary: #00BCD4; /* Cyan/Aqua for highlights */
+            --color-secondary: #E91E63; /* Pink for contrast */
+            --color-text: #E0E0E0;
+            --font-family: 'Inter', sans-serif;
+        }
+
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none; /* Hide default cursor for custom feel */
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--color-text);
+            background-color: var(--color-bg);
+            line-height: 1.6;
+            overflow-x: hidden; /* Important for good mobile UX */
+        }
+
+        /* --- Three.js Canvas Styles --- */
+        #three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Puts the 3D scene behind all content */
+            opacity: 1; /* Full visibility for the space background */
+            transition: opacity 0.5s ease;
+        }
+
+        /* --- Cursor Trail Canvas Styles --- */
+        #trail-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999; /* Topmost layer */
+            pointer-events: none; /* Allow clicking through the canvas */
+        }
+
+        /* Custom Cursor Dot */
+        #cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--color-primary);
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10000;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease;
+            box-shadow: 0 0 10px var(--color-primary);
+        }
+
+        /* --- Layout and Sections --- */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            background: rgba(5, 5, 8, 0.8);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid rgba(0, 188, 212, 0.1);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            cursor: pointer; /* Restore cursor pointer for interactive elements */
+        }
+
+        nav a {
+            color: var(--color-text);
+            text-decoration: none;
+            margin-left: 2rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            cursor: pointer;
+        }
+
+        nav a:hover {
+            color: var(--color-primary);
+        }
+
+        main {
+            position: relative;
+            z-index: 1; /* Ensures content is above the canvas */
+        }
+
+        section {
+            min-height: 100vh;
+            padding: 6rem 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            /* Darker gradient for deep space theme */
+            background: linear-gradient(180deg, rgba(5, 5, 8, 0.6) 0%, rgba(5, 5, 8, 0.4) 100%);
+        }
+
+        /* --- Typography and Components --- */
+        h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(0, 188, 212, 0.5);
+            margin-bottom: 0.5rem;
+        }
+
+        /* NEW: Special styling for the Hero Name to make it attractive */
+        .hero-title {
+            font-size: clamp(3.5rem, 10vw, 7rem); /* Slightly larger */
+            background: linear-gradient(45deg, var(--color-primary), #ffffff, var(--color-secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none; /* Remove default shadow for the gradient to work cleanly */
+            filter: drop-shadow(0 0 20px rgba(0, 188, 212, 0.4)); /* Add a glow via filter */
+            letter-spacing: -2px;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--color-primary);
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: var(--color-text);
+            margin-bottom: 3rem;
+        }
+
+        .cta-button {
+            padding: 0.75rem 2rem;
+            background-color: var(--color-primary);
+            color: var(--color-bg);
+            text-decoration: none;
+            border-radius: 9999px;
+            font-weight: 700;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 188, 212, 0.4);
+        }
+
+        /* --- Profile Photo Styles (NEW) --- */
+        .profile-photo-container {
+            width: 180px;
+            height: 180px;
+            margin-bottom: 1.5rem;
+            border-radius: 50%;
+            position: relative;
+            z-index: 2;
+            /* Flex center to keep image aligned */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Animated glowing ring behind the photo */
+        .profile-photo-container::before {
+            content: '';
+            position: absolute;
+            top: -3px; left: -3px; right: -3px; bottom: -3px;
+            background: linear-gradient(45deg, var(--color-primary), var(--color-secondary), var(--color-primary));
+            border-radius: 50%;
+            z-index: -1;
+            background-size: 400%;
+            animation: gradientSpin 10s linear infinite;
+            filter: blur(5px); /* Soft glow effect */
+        }
+        
+        @keyframes gradientSpin {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .profile-photo {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--color-bg); /* Creates a clean gap between photo and ring */
+            background-color: #222; /* Fallback color */
+        }
+
+        /* --- Project Grid Styles --- */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .project-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: left;
+            border-left: 5px solid var(--color-secondary);
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            cursor: pointer;
+            /* Added for link behavior */
+            text-decoration: none;
+            display: block;
+            color: inherit;
+        }
+
+        .project-card:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .project-card h3 {
+            color: var(--color-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* --- Skills Section Styles --- */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .skill-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+
+        .skill-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--color-primary);
+            box-shadow: 0 5px 15px rgba(0, 188, 212, 0.2);
+        }
+
+        .skill-icon {
+            font-size: 2.5rem;
+            color: var(--color-primary);
+            transition: color 0.3s ease;
+        }
+
+        .skill-card:hover .skill-icon {
+            color: #fff;
+            text-shadow: 0 0 10px var(--color-primary);
+        }
+
+        .skill-name {
+            font-weight: 600;
+            color: var(--color-text);
+            font-size: 0.9rem;
+        }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem 1.5rem;
+            }
+
+            nav a {
+                margin-left: 1rem;
+                font-size: 0.9rem;
+            }
+
+            section {
+                padding: 4rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas -->
+    <canvas id="three-canvas"></canvas>
+    <!-- Cursor Trail Canvas -->
+    <canvas id="trail-canvas"></canvas>
+    <!-- Custom Cursor Dot -->
+    <div id="cursor-dot"></div>
+
+    <!-- Header / Navigation -->
+    <header>
+        <div class="logo">Gudi Hemanth</div>
+        <nav>
+            <a href="#about">About</a>
+            <a href="#skills">Skills</a>
+            <a href="#projects">Projects</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- 1. Hero Section -->
+        <section id="hero">
+            <!-- Profile Photo Placeholder -->
+            <!-- REPLACE 'https://via.placeholder.com/200' WITH YOUR ACTUAL PHOTO URL -->
+            <div class="profile-photo-container gsap-item">
+                <img src="profile.jpg.jpg" alt="Profile Photo" class="profile-photo">
+            </div>
+
+            <h1 class="gsap-item hero-title">Gudi Hemanth</h1>
+            <p class="subtitle gsap-item">Software Engineer & ML Enthusiast</p>
+            <a href="#projects" class="cta-button gsap-item">See My Work</a>
+        </section>
+
+        <!-- 2. About Section -->
+        <section id="about">
+            <h2>Who I Am</h2>
+            <div style="max-width: 800px;">
+                <p>I am a Computer Science and Engineering undergraduate at Amrita Vishwa Vidyapeetham, Coimbatore, with a robust foundation in Data Structures, Algorithms, and System Design. Proficient in C++, Python, and Java, I am driven by a passion for solving complex computational problems. My academic journey has equipped me with deep insights into Operating Systems, Computer Networks, and Compiler Design, which I apply to build efficient and scalable software solutions.</p>
+                <br>
+                <p>Beyond my core curriculum, I am a certified Oracle APEX Cloud Developer and OCI AI Foundations Associate, reflecting my commitment to mastering Cloud technologies and Machine Learning. I enjoy bridging the gap between hardware and software, as seen in my IoT and optimization projects. Whether it's developing interactive web applications or exploring Edge Computing, I am always eager to learn and innovate in the ever-evolving tech landscape.</p>
+            </div>
+        </section>
+
+        <!-- 3. Skills Section (NEW) -->
+        <section id="skills">
+            <h2>Technical Skills</h2>
+            <div class="skills-grid">
+                <!-- Existing Web Skills -->
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-js skill-icon"></i>
+                    <span class="skill-name">JavaScript</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-react skill-icon"></i>
+                    <span class="skill-name">React</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-angular skill-icon"></i>
+                    <span class="skill-name">Angular</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-html5 skill-icon"></i>
+                    <span class="skill-name">HTML5</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-css3-alt skill-icon"></i>
+                    <span class="skill-name">CSS3</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-node-js skill-icon"></i>
+                    <span class="skill-name">Node.js</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-cube skill-icon"></i>
+                    <span class="skill-name">Three.js</span>
+                </div>
+                
+                <!-- Programming Languages -->
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-python skill-icon"></i>
+                    <span class="skill-name">Python</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-java skill-icon"></i>
+                    <span class="skill-name">Java</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-copyright skill-icon"></i>
+                    <span class="skill-name">C</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-code skill-icon"></i>
+                    <span class="skill-name">C++</span>
+                </div>
+
+                <!-- Data Science & ML -->
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-brain skill-icon"></i>
+                    <span class="skill-name">Machine Learning</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-robot skill-icon"></i>
+                    <span class="skill-name">TensorFlow</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-table skill-icon"></i>
+                    <span class="skill-name">Pandas</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-layer-group skill-icon"></i>
+                    <span class="skill-name">NumPy</span>
+                </div>
+
+                <!-- Tools & Environments -->
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-book-open skill-icon"></i>
+                    <span class="skill-name">Jupyter</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-moon skill-icon"></i>
+                    <span class="skill-name">Eclipse</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-git-alt skill-icon"></i>
+                    <span class="skill-name">Git</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fab fa-docker skill-icon"></i>
+                    <span class="skill-name">Docker</span>
+                </div>
+                <div class="skill-card gsap-skill">
+                    <i class="fas fa-database skill-icon"></i>
+                    <span class="skill-name">SQL</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Projects Section -->
+        <section id="projects">
+            <h2>Featured Projects</h2>
+            <div class="project-grid">
+                
+                <!-- Project 1 -->
+                <a href="https://github.com/hemanth45-gudi/Route-Optimization-Hill-Climb" target="_blank" class="project-card gsap-project">
+                    <h3>Route Optimization AI</h3>
+                    <p>An implementation of the Hill Climbing algorithm to solve complex route optimization problems efficiently.</p>
+                </a>
+
+                <!-- Project 2 -->
+                <a href="https://github.com/hemanth45-gudi/Sudoku-Solver-using-Backtracking" target="_blank" class="project-card gsap-project">
+                    <h3>Sudoku Solver</h3>
+                    <p>A logic-based solver using the Backtracking algorithm to find solutions for any valid Sudoku puzzle.</p>
+                </a>
+
+                <!-- Project 3 -->
+                <a href="https://github.com/hemanth45-gudi/STM32F4-Weather-Station-IoT" target="_blank" class="project-card gsap-project">
+                    <h3>STM32F4 Weather Station</h3>
+                    <p>IoT-based weather monitoring system using STM32F4 microcontrollers for real-time data collection.</p>
+                </a>
+
+                <!-- Project 4 -->
+                <a href="https://github.com/hemanth45-gudi/FreeRTOS-Queue-Management-Example" target="_blank" class="project-card gsap-project">
+                    <h3>FreeRTOS Queue Manager</h3>
+                    <p>Demonstrates advanced task synchronization and inter-task communication using FreeRTOS Queues on Arduino/ESP32.</p>
+                </a>
+
+                <!-- Project 5 -->
+                <a href="https://github.com/hemanth45-gudi/Arduino-EVM-System" target="_blank" class="project-card gsap-project">
+                    <h3>Arduino EVM System</h3>
+                    <p>A prototype Electronic Voting Machine (EVM) built with Arduino to simulate secure voting processes.</p>
+                </a>
+
+                <!-- Project 6 -->
+                <a href="https://github.com/hemanth45-gudi/travel-website" target="_blank" class="project-card gsap-project">
+                    <h3>Travel Website</h3>
+                    <p>A responsive and interactive web platform designed for showcasing travel destinations and booking.</p>
+                </a>
+
+            </div>
+        </section>
+
+        <!-- 5. Contact Section -->
+        <section id="contact">
+            <h2>Get In Touch</h2>
+            <p style="margin-bottom: 2rem;">I'm currently seeking new opportunities. Feel free to reach out via email or connect on social media!</p>
+            
+            <div style="display: flex; gap: 1.5rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <!-- Updated Email Link to open Gmail web interface directly -->
+                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=hemanth.gudi45@gmail.com" target="_blank" class="cta-button">
+                    <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i> Email Me
+                </a>
+                <a href="https://www.linkedin.com/in/hemanth-gudi-373a78351/" target="_blank" class="cta-button" style="background-color: #0077b5; border: 1px solid #0077b5;">
+                    <i class="fab fa-linkedin" style="margin-right: 0.5rem;"></i> LinkedIn
+                </a>
+                <a href="https://github.com/hemanth45-gudi" target="_blank" class="cta-button" style="background-color: #333; border: 1px solid #333;">
+                    <i class="fab fa-github" style="margin-right: 0.5rem;"></i> GitHub
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- JAVASCRIPT & THREE.JS LOGIC ---
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // --- 2. THREE.JS INITIALIZATION ---
+        const canvas = document.querySelector('#three-canvas');
+        const sizes = {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+        
+        const scene = new THREE.Scene();
+        // Dark fog for deep space
+        scene.fog = new THREE.FogExp2(0x050508, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
+        camera.position.z = 5;
+        
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas: canvas, 
+            antialias: true, 
+            alpha: true 
+        });
+        renderer.setSize(sizes.width, sizes.height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // --- STARFIELD ---
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 6000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const colorArray = new Float32Array(particlesCount * 3);
+
+        const color1 = new THREE.Color(0xffffff);
+        const color2 = new THREE.Color(0x00bcd4); // Cyan tint
+
+        for(let i = 0; i < particlesCount; i++) {
+            const i3 = i * 3;
+            posArray[i3] = (Math.random() - 0.5) * 90; 
+            posArray[i3 + 1] = (Math.random() - 0.5) * 90;
+            posArray[i3 + 2] = (Math.random() - 0.5) * 90;
+
+            const mixedColor = color1.clone().lerp(color2, Math.random() * 0.3);
+            colorArray[i3] = mixedColor.r;
+            colorArray[i3 + 1] = mixedColor.g;
+            colorArray[i3 + 2] = mixedColor.b;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.12, 
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const starField = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(starField);
+
+        // --- 3. CURSOR TRAIL LOGIC ---
+        const trailCanvas = document.getElementById('trail-canvas');
+        const trailCtx = trailCanvas.getContext('2d');
+        const cursorDot = document.getElementById('cursor-dot');
+        let trailPoints = [];
+
+        function resizeTrailCanvas() {
+            trailCanvas.width = window.innerWidth;
+            trailCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeTrailCanvas);
+        resizeTrailCanvas();
+
+        // --- 4. ANIMATION LOOP ---
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - windowHalfX) * 0.001;
+            mouseY = (event.clientY - windowHalfY) * 0.001;
+            cursorDot.style.left = event.clientX + 'px';
+            cursorDot.style.top = event.clientY + 'px';
+            trailPoints.push({ x: event.clientX, y: event.clientY, age: 0 });
+        });
+
+        let scrollY = window.scrollY;
+        window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
+        const clock = new THREE.Clock();
+
+        const tick = () => {
+            const elapsedTime = clock.getElapsedTime();
+            
+            // Mouse Parallax
+            targetX += (mouseX - targetX) * 0.05;
+            targetY += (mouseY - targetY) * 0.05;
+
+            // 1. Starfield Animation
+            starField.rotation.y = elapsedTime * 0.015;
+            starField.rotation.x = targetY * 0.05;
+
+            // 2. Scroll Interaction
+            camera.position.z = 5 + scrollY * 0.005;
+
+            renderer.render(scene, camera);
+
+            // --- RENDER CURSOR TRAIL ---
+            trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+            if (trailPoints.length > 0) {
+                trailCtx.beginPath();
+                trailCtx.moveTo(trailPoints[0].x, trailPoints[0].y);
+                for (let i = 0; i < trailPoints.length - 1; i++) {
+                    const p1 = trailPoints[i];
+                    const p2 = trailPoints[i+1];
+                    const xc = (p1.x + p2.x) / 2;
+                    const yc = (p1.y + p2.y) / 2;
+                    trailCtx.quadraticCurveTo(p1.x, p1.y, xc, yc);
+                    p1.age++;
+                }
+                trailPoints = trailPoints.filter(p => p.age < 25);
+                trailCtx.lineCap = 'round';
+                trailCtx.lineJoin = 'round';
+                const gradient = trailCtx.createLinearGradient(
+                    trailPoints[0].x, trailPoints[0].y, 
+                    trailPoints[trailPoints.length-1].x, trailPoints[trailPoints.length-1].y
+                );
+                gradient.addColorStop(0, 'rgba(0, 188, 212, 0)');
+                gradient.addColorStop(1, 'rgba(0, 188, 212, 0.8)');
+                trailCtx.strokeStyle = gradient;
+                trailCtx.lineWidth = 3;
+                trailCtx.stroke();
+            }
+
+            window.requestAnimationFrame(tick);
+        };
+        
+        window.onload = function () { tick(); }
+
+        window.addEventListener('resize', () => {
+            sizes.width = window.innerWidth;
+            sizes.height = window.innerHeight;
+            camera.aspect = sizes.width / sizes.height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(sizes.width, sizes.height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            resizeTrailCanvas();
+        });
+
+        // --- 5. GSAP ---
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from(".gsap-item", {
+            opacity: 0,
+            y: 50,
+            stagger: 0.2,
+            duration: 1.2,
+            ease: "power3.out",
+        });
+
+        // NEW: Skills Animation
+        gsap.utils.toArray(".gsap-skill").forEach((skill, i) => {
+            gsap.from(skill, {
+                opacity: 0,
+                y: 30,
+                scale: 0.8,
+                duration: 0.6,
+                delay: i * 0.05, // Stagger effect based on index
+                ease: "back.out(1.7)",
+                scrollTrigger: {
+                    trigger: "#skills", // Trigger when the whole section comes into view
+                    start: "top 80%",
+                    toggleActions: "play none none none",
+                }
+            });
+        });
+
+        gsap.utils.toArray(".gsap-project").forEach((card, i) => {
+            gsap.from(card, {
+                opacity: 0,
+                y: 100,
+                duration: 1,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%",
+                    toggleActions: "play none none none",
+                }
+            });
+        });
+    </script>
+</body>
+</html>
