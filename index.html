@@ -482,10 +482,11 @@ most.</p>
                 </a>
 
                 <!-- Project 4 -->
-                <a href="https://github.com/hemanth45-gudi/FreeRTOS-Queue-Management-Example" target="_blank" class="project-card gsap-project">
-                    <h3>FreeRTOS Queue Manager</h3>
-                    <p>Demonstrates advanced task synchronization and inter-task communication using FreeRTOS Queues on Arduino/ESP32.</p>
-                </a>
+               <!-- Project 4 (UPDATED FORM ENGINE) -->
+                <div onclick="openFormEngine()" class="project-card gsap-project">
+                    <h3>Config-Driven Form Engine — Full Stack Form Management Platform</h3>
+                        <p>Developed a config-driven form engine for dynamic form creation, validation, and scalable backend processing.</p>
+                </div>
 
                 <!-- Project 5 -->
                 <a href="https://github.com/hemanth45-gudi/Secure_Research_project" target="_blank" class="project-card gsap-project">
@@ -524,7 +525,11 @@ most.</p>
 
     <script>
         // --- JAVASCRIPT & THREE.JS LOGIC ---
-        
+
+        function openFormEngine() {
+            window.open("https://github.com/Nandgopal-R/form-engine-frontend", "_blank"); // Backend
+            window.open("https://github.com/Nandgopal-R/form-engine", "_blank"); // Frontend
+        }
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
